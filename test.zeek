@@ -1,24 +1,28 @@
-global key:set[string]={"USER-AGENT"};
-global x:set[string]={};
-global cc=0;
-global a:addr;
-
+global dict : table[addr] of set[string] = table();
+global mycount:int;
 
 event http_header(c: connection, is_orig: bool, name: string, value: string){
-a=c$id$orig_h;
-if (name in key){
-if (to_lower(value) in x){
-;
+if (name == "USER-AGENT" ){
+if (c$id$orig_h in dict){
+if (to_lower(value) !in dict[c$id$orig_h]){
+add dict[c$id$orig_h][to_lower(value)];
+}
 }
 else{
-add x[to_lower(value)];
-++cc;
+dict[c$id$orig_h]=set(to_lower(value));
 }
 }
 }
 
 event zeek_done(){
-if (cc>=3){
-print fmt("%s is a proxy",a);
+for (myaddr in dict){
+mycount=0;
+for (myuser in dict[myaddr]){
+++mycount;
 }
+if (mycount>=3){
+print fmt("%s is a proxy",myaddr);
+}
+}
+
 }
